@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 import os
 import whisper
 import chromadb
@@ -105,7 +108,7 @@ Answer:
 # 5. MAIN EXECUTION LOOP
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    audio_file = "lecture.mp3"  # Pass path to your MP3/WAV file
+    audio_file = "lecture.mp4"  # Pass path to your MP3/WAV file
     
     if not os.path.exists(audio_file):
         print(f"⚠️ Please provide a valid audio file path (currently trying '{audio_file}').")
