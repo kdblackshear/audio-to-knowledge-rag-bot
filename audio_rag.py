@@ -1,21 +1,11 @@
-from dotenv import load_dotenv
-load_dotenv()
-
 import os
 import whisper
 import chromadb
 from chromadb.utils import embedding_functions
-from openai import OpenAI
+import ollama
 
 # ---------------------------------------------------------------------------
-# 1. SETUP & CONFIGURATION
-# ---------------------------------------------------------------------------
-# Replace with your OpenAI API Key or use environment variable OPENAI_API_KEY
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "your-openai-api-key")
-client = OpenAI(api_key=OPENAI_API_KEY)
-
-# ---------------------------------------------------------------------------
-# 2. TRANSCRIBE AUDIO WITH WHISPER
+# 1. TRANSCRIBE AUDIO WITH WHISPER (LOCAL)
 # ---------------------------------------------------------------------------
 def transcribe_audio(file_path: str):
     """Transcribes audio file using OpenAI Whisper (runs locally)."""
@@ -36,7 +26,7 @@ def format_timestamp(seconds: float) -> str:
     return f"{mins:02d}:{secs:02d}"
 
 # ---------------------------------------------------------------------------
-# 3. VECTOR DB INDEXING (CHROMADB)
+# 2. VECTOR DB INDEXING (CHROMADB)
 # ---------------------------------------------------------------------------
 def build_vector_db(segments):
     """Indexes transcript segments into ChromaDB with metadata timestamps."""
@@ -74,10 +64,10 @@ def build_vector_db(segments):
     return collection
 
 # ---------------------------------------------------------------------------
-# 4. RAG SEARCH & LLM ANSWER GENERATION
+# 3. RAG SEARCH & LOCAL LLM ANSWER GENERATION (OLLAMA)
 # ---------------------------------------------------------------------------
 def ask_question(collection, query: str):
-    """Retrieves context from ChromaDB and generates an LLM response with sources."""
+    """Retrieves context from ChromaDB and generates a local LLM response using Ollama."""
     # Retrieve top 4 most relevant audio chunks
     results = collection.query(query_texts=[query], n_results=4)
     retrieved_chunks = results["documents"][0]
@@ -96,19 +86,20 @@ Question: {query}
 Answer:
 """
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.2,
+    # Call local Ollama model
+    response = ollama.chat(
+        model='llama3',
+        messages=[{'role': 'user', 'content': prompt}],
+        options={'temperature': 0.2}
     )
 
-    return response.choices[0].message.content
+    return response['message']['content']
 
 # ---------------------------------------------------------------------------
-# 5. MAIN EXECUTION LOOP
+# 4. MAIN EXECUTION LOOP
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    audio_file = "lecture.mp4"  # Pass path to your MP3/WAV file
+    audio_file = "lecture.mp4"  # Pass path to your MP4/audio file
     
     if not os.path.exists(audio_file):
         print(f"⚠️ Please provide a valid audio file path (currently trying '{audio_file}').")
